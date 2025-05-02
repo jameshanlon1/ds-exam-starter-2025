@@ -10,6 +10,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
     const movieId = parseInt(event.pathParameters?.movieId || "", 10);
     const roleName = event.pathParameters?.role;
+    const verbose = event.queryStringParameters?.verbose === "true";
 
     if (!movieId || !roleName) {
       return {

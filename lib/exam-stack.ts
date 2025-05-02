@@ -78,6 +78,7 @@ export class ExamStack extends cdk.Stack {
     const moviesEndpoint =roleEndpont.addResource("movies");
     const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
 
+
     movieIdEndpoint.addMethod(
       "GET",
       new apig.LambdaIntegration(question1Fn, { proxy: true })
