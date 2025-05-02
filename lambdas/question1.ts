@@ -1,29 +1,55 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
+
 
 const client = createDDbDocClient();
 
-export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
+export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
-    console.log("Event: ", JSON.stringify(event));
+    const movieId = parseInt(event.pathParameters?.movieId || "", 10);
+    const roleName = event.pathParameters?.role;
+
+    if (!movieId || !roleName) {
+      return {
+        statusCode: 400,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: "Missing or invalid parameters" }),
+      };
+    }
+
+    const result = await client.send(
+      new QueryCommand({
+        TableName: process.env.TABLE_NAME,
+        KeyConditionExpression: "movieId = :movieId",
+        FilterExpression: "roleName = :roleName",
+        ExpressionAttributeValues: {
+          ":movieId": movieId,
+          ":roleName": roleName,
+        },
+      })
+    );
+
+    if (!result.Items || result.Items.length === 0) {
+      return {
+        statusCode: 404,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: "Crew member not found" }),
+      };
+    }
 
     return {
       statusCode: 200,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({}),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(result.Items[0]),
     };
   } catch (error: any) {
-    console.log(JSON.stringify(error));
+    console.error("Error: ", error);
     return {
       statusCode: 500,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ error }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ error: "Internal Server Error", detail: error }),
     };
   }
 };

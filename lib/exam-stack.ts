@@ -56,6 +56,9 @@ export class ExamStack extends cdk.Stack {
         resources: [table.tableArn],
       }),
     });
+    
+    table.grantReadWriteData(question1Fn)
+
 
     const api = new apig.RestApi(this, "ExamAPI", {
       description: "Exam api",
@@ -70,8 +73,15 @@ export class ExamStack extends cdk.Stack {
       },
     });
 
-    const anEndpoint = api.root.addResource("patha");
+    const crewEndpoint = api.root.addResource("crew");
+    const roleEndpont = crewEndpoint.addResource("{role}");
+    const moviesEndpoint =roleEndpont.addResource("movies");
+    const movieIdEndpoint = moviesEndpoint.addResource("{movieId}");
 
+    movieIdEndpoint.addMethod(
+      "GET",
+      new apig.LambdaIntegration(question1Fn, { proxy: true })
+    );
 
     // ==================================
     // Question 2 - Event-Driven architecture
